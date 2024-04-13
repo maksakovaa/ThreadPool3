@@ -1,5 +1,42 @@
 #include "ThPool.h"
-#include "IntThread.h"
+
+IntThread::IntThread(ThreadPool* pool, int qindex)
+{
+    m_pFlag = nullptr;
+    m_thread = std::thread(&IntThread::startFunc, this, pool, qindex);
+}
+
+IntThread::~IntThread()
+{
+    m_thread.join();
+}
+
+bool IntThread::checkInterrupted()
+{
+    return thread_interrupt_flag;
+}
+
+void IntThread::startFunc(ThreadPool* pool, int qindex)
+{
+    {
+        std::lock_guard<std::mutex> l(m_defender);
+        m_pFlag = &thread_interrupt_flag;
+    }
+    pool->threadFunc(qindex);
+    {
+        std::lock_guard<std::mutex> l(m_defender);
+        m_pFlag = nullptr;
+    }
+}
+
+void IntThread::interrupt()
+{
+    std::lock_guard<std::mutex> l(m_defender);
+    if (m_pFlag)
+    {
+        *m_pFlag = true;
+    }
+}
 
 ThreadPool::ThreadPool(): m_thread_count(std::thread::hardware_concurrency() != 0 ? std::thread::hardware_concurrency() : 4), m_thread_queues(m_thread_count) {}
 
@@ -14,7 +51,8 @@ void ThreadPool::start()
 void ThreadPool::threadFunc(int qindex)
 {
     while (true) {
-        if (IntThread::checkInterrupted()) {
+        if (IntThread::checkInterrupted())
+        {
             std::cout << "thread was interrupted" << std::endl;
             return;
         }
@@ -48,7 +86,7 @@ void ThreadPool::interrupt()
     }
 }
 
-/*
+
 void ThreadPool::stop()
 {
     for (int i = 0; i < m_thread_count; i++)
@@ -58,10 +96,9 @@ void ThreadPool::stop()
     }
     for (auto& t : m_threads)
     {
-        t.join();
+        t->~IntThread();
     }
 }
-*/
 
 void ThreadPool::push_task(FuncType f, int id, int arg)
 {

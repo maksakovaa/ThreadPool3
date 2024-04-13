@@ -1,6 +1,7 @@
 #include "ReqHandler.h"
 using namespace std;
 
+thread_local bool thread_interrupt_flag = false;
 mutex coutLocker;
 
 void taskFunc(int id, int delay)

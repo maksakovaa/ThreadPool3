@@ -1,5 +1,5 @@
 #pragma once
-#include "IntThread.h"
+#include "ThPool.h"
 
 class RequestHandler {
 public:
