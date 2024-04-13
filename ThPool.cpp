@@ -41,7 +41,6 @@ void IntThread::interrupt()
             m_pFlag->cv->notify_one();
             m_pFlag->cv = nullptr;
         }
-        
     }
 }
 
