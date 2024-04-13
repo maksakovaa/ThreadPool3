@@ -13,14 +13,14 @@ IntThread::~IntThread()
 
 bool IntThread::checkInterrupted()
 {
-    return thread_interrupt_flag;
+    return interrup_flag.thread_interrupt_flag;
 }
 
 void IntThread::startFunc(ThreadPool* pool, int qindex)
 {
     {
         std::lock_guard<std::mutex> l(m_defender);
-        m_pFlag = &thread_interrupt_flag;
+        m_pFlag = &interrup_flag;
     }
     pool->threadFunc(qindex);
     {
@@ -31,11 +31,33 @@ void IntThread::startFunc(ThreadPool* pool, int qindex)
 
 void IntThread::interrupt()
 {
-    std::lock_guard<std::mutex> l(m_defender);
+    std::lock_guard<std::mutex> lg(m_defender);
     if (m_pFlag)
     {
-        *m_pFlag = true;
+        std::lock_guard<std::mutex> lg(m_pFlag->m_defender);
+        m_pFlag->thread_interrupt_flag = true;
+        if (m_pFlag->cv)
+        {
+            m_pFlag->cv->notify_one();
+            m_pFlag->cv = nullptr;
+        }
+        
     }
+}
+
+void IntThread::IntWait(std::condition_variable& cv, std::unique_lock<std::mutex> &ul, std::function<bool()> predicate)
+{
+    {
+        std::lock_guard<std::mutex> lg(interrup_flag.m_defender);
+        interrup_flag.cv = &cv;
+    }
+    try
+    {
+        cv.wait(ul, [&] {return predicate() || checkInterrupted(); });
+    }
+    catch(...) {}
+    std::lock_guard<std::mutex> lg(interrup_flag.m_defender);
+    interrup_flag.cv = nullptr;  
 }
 
 ThreadPool::ThreadPool(): m_thread_count(std::thread::hardware_concurrency() != 0 ? std::thread::hardware_concurrency() : 4), m_thread_queues(m_thread_count) {}
@@ -59,18 +81,28 @@ void ThreadPool::threadFunc(int qindex)
         task_type task_to_do;
         bool res;
         int i = 0;
-        for (; i < m_thread_count; i++) {
+        for (; i < m_thread_count; i++)
+        {
             if (res = m_thread_queues[(qindex + i) % m_thread_count].fast_pop(task_to_do))
                 break;
         }
-        if (!res) {
+        if (!res)
+        {
             m_thread_queues[qindex].pop(task_to_do);
         }
-        else if (!task_to_do) {
+        else if (!task_to_do.valid())
+        {
             m_thread_queues[(qindex + i) % m_thread_count].push(task_to_do);
         }
 
-        if (!task_to_do) {
+        if (IntThread::checkInterrupted())
+        {
+            std::cout << "thread was interrupted\n";
+            return;
+        }
+        
+        if (!task_to_do.valid())
+        {
             return;
         }
 
