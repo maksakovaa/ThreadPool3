@@ -89,7 +89,7 @@ void ThreadPool::threadFunc(int qindex)
         {
             m_thread_queues[qindex].pop(task_to_do);
         }
-        else if (!task_to_do.valid())
+        else if (!task_to_do)
         {
             m_thread_queues[(qindex + i) % m_thread_count].push(task_to_do);
         }
@@ -100,7 +100,7 @@ void ThreadPool::threadFunc(int qindex)
             return;
         }
         
-        if (!task_to_do.valid())
+        if (!task_to_do)
         {
             return;
         }
