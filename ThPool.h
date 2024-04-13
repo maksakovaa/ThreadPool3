@@ -52,7 +52,9 @@ public:
     {
         std::unique_lock<std::mutex> l(m_locker);
         if (m_task_queue.empty())
-            IntThread::IntWait(m_event_holder, l, [this] {return !m_task_queue.empty();});
+        {
+            IntThread::IntWait(m_notifier, l, [this]{ return !m_task_queue.empty(); });
+        }
         if (m_task_queue.empty()) return;
         item = move(m_task_queue.front());
         m_task_queue.pop();
