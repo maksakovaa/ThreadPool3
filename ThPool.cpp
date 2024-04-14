@@ -71,12 +71,8 @@ void ThreadPool::start()
 
 void ThreadPool::threadFunc(int qindex)
 {
-    while (true) {
-        if (IntThread::checkInterrupted())
-        {
-            std::cout << "thread was interrupted" << std::endl;
-            return;
-        }
+    while (true)
+    {
         task_type task_to_do;
         bool res;
         int i = 0;
@@ -93,13 +89,7 @@ void ThreadPool::threadFunc(int qindex)
         {
             m_thread_queues[(qindex + i) % m_thread_count].push(task_to_do);
         }
-
-        if (IntThread::checkInterrupted())
-        {
-            std::cout << "thread was interrupted\n";
-            return;
-        }
-        
+   
         if (!task_to_do)
         {
             return;

@@ -30,7 +30,7 @@ public:
     void interrupt();
     void startFunc(ThreadPool* pool, int qindex);
     static bool checkInterrupted();
-    void IntWait(std::condition_variable& cv, std::unique_lock<std::mutex> &ul, std::function<bool()> predicate);
+    static void IntWait(std::condition_variable& cv, std::unique_lock<std::mutex> &ul, std::function<bool()> predicate);
 private:
     std::mutex m_defender;
     thread_interrupt_struct* m_pFlag;
