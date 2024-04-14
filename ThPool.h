@@ -23,7 +23,8 @@ private:
     std::thread m_thread;
 };
 
-class ThreadPool {
+class ThreadPool
+{
 public:
     ThreadPool();
     void start();

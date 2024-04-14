@@ -1,7 +1,8 @@
 #pragma once
 #include "ThPool.h"
 
-class RequestHandler {
+class RequestHandler
+{
 public:
     RequestHandler();
     ~RequestHandler();

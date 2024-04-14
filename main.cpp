@@ -9,14 +9,16 @@ void taskFunc(int id, int delay)
     for (int i = 0; i < delay; i++) {
         if (IntThread::checkInterrupted())
         {
-            unique_lock<mutex> l(coutLocker);
+            lock_guard<mutex> l(coutLocker);
             cout << "task " << id << " was interrupted" << endl;
             return;
         }
         this_thread::sleep_for(chrono::seconds(1));
     }
-    unique_lock<mutex> l(coutLocker);
-    cout << "task " << id << " made by thread_id " << this_thread::get_id() << endl;
+    {
+        lock_guard<mutex> l(coutLocker);
+        cout << "task " << id << " made by thread_id " << this_thread::get_id() << endl;
+    }
 }
 
 int main()
